@@ -60,4 +60,4 @@ class LearningAgent
 
 ## UI
 
- 빼고 다
+위에 빼고 다
