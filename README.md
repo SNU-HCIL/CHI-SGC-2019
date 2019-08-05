@@ -1,4 +1,4 @@
-### ToDo:
+# ToDo:
 
 Network, Learning Agent, Game은 모두 JS로 구현해야 함 (node.js 아님)
 
