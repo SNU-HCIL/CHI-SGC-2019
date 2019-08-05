@@ -55,7 +55,8 @@ class LearningAgent
     - distance to the other ghost (euclidian and maze distances)
     - inverse of distance to the other ghost
     - 재량껏 추가해 주세요
-
+  - 대략 이렇게 생긴 맵?:\
+![alt text](https://github.com/SNU-HCIL/CHI-SGC-2019/blob/master/img/map.JPG)
 
 ## UI
 
