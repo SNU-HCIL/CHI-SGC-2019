@@ -1,3 +1,5 @@
+### ToDo:
+
 Network, Learning Agent, Game은 모두 JS로 구현해야 함 (node.js 아님)
 
 ## Network
@@ -31,6 +33,28 @@ class LearningAgent
 - step(action)
 - render(): 게임 현재 화면을 `<canvas>`나 `<svg>`로 그려서 뱉는다
 
+- 팩맨으로하는게 좋을듯?
+  - 지금은 pacman, ghost, food만 맵에 있는걸로?
+  - ghost들은 지금은 멍청해도 괜찮 (랜덤으로 돌아다닌다거나 무조건 pacman만 잡을려 하거나)
+    - 2마리 정도?
+  - rewards:
+    - eat one food = 10
+    - eat all the food = 100 (game done)
+    - get killed by a ghost = -50 (game over)
+    - -1 for each turn
+  - list of features:
+    - player position
+    - food positions
+    - number of foods
+    - ghost positions
+    - number of ghosts
+    - distance to the closest food (euclidian and maze distances)
+    - inverse of distance to closest food (1 if distance is 0)
+    - distance to the closest ghost (euclidian and maze distances)
+    - inverse of distance to closest ghost (1 if distance is 0)
+    - distance to the other ghost (euclidian and maze distances)
+    - inverse of distance to the other ghost
+    - 재량껏 추가해 주세요
 
 
 ## UI
