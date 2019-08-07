@@ -58,7 +58,7 @@ class LearningAgent
     - whether a ghost is on a neightboring space
     - 재량껏 추가해 주세요
   - 대략 이렇게 생긴 맵?:\
-![alt text](https://github.com/SNU-HCIL/CHI-SGC-2019/blob/master/img/map.JPG)
+![alt text](https://github.com/SNU-HCIL/CHI-SGC-2019/blob/master/img/map.JPG)\n
 -시간 부족할거 같으면 훨씬 더 간단한 것도 괜찮. 예: Cart Pole
 
 ## UI
