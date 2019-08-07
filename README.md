@@ -41,7 +41,7 @@ class LearningAgent
     - eat one food = 10
     - eat all the food = 100 (game done)
     - get killed by a ghost = -50 (game over)
-    - -1 for each turn
+    - ~~-1 for each turn~~
   - list of features:
     - player position
     - food positions
@@ -54,9 +54,12 @@ class LearningAgent
     - inverse of distance to closest ghost (1 if distance is 0)
     - distance to the other ghost (euclidian and maze distances)
     - inverse of distance to the other ghost
+    - whether a food is on a neighboring space
+    - whether a ghost is on a neightboring space
     - 재량껏 추가해 주세요
   - 대략 이렇게 생긴 맵?:\
-![alt text](https://github.com/SNU-HCIL/CHI-SGC-2019/blob/master/img/map.JPG)
+![alt text](https://github.com/SNU-HCIL/CHI-SGC-2019/blob/master/img/map.JPG)\
+-시간 부족할거 같으면 훨씬 더 간단한 것도 괜찮. 예: Cart Pole
 
 ## UI
 
