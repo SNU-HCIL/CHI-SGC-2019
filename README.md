@@ -29,7 +29,7 @@ class LearningAgent
 - state_space()
 - feature_function(state, action): list of features
   - feature: (state, action) -> number
-- reset(): 새 게임 시작
+- reset(): 새 게임 시작. Returns state
 - step(action): returns reward, done, new_state
 - render(): 게임 현재 화면을 `<canvas>`나 `<svg>`로 그려서 뱉는다
 
