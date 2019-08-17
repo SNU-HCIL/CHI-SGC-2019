@@ -1,4 +1,4 @@
-import * as tf from '@tensoflow/tfjs';
+// import * as tf from '@tensoflow/tfjs';
 
 /**
  * Fully connected single output network using TensorFlow.js.
@@ -14,7 +14,7 @@ class Network {
      * @param {string} optimizer Name of the optimizer to be used.
      * @param {number} batchSize Number of training data to be collected before actual training.
      */
-    constructor(inputSize, layout, activation='relu', loss='mse', optimizer='adam', batchSize=10) {
+    constructor(inputSize, layout, activation='relu', loss='meanSquaredError', optimizer='sgd', batchSize=10) {
         this._training_x = [];
         this._training_y = [];
         this._batchSize = batchSize;
@@ -34,13 +34,14 @@ class Network {
      * Flushes out any unused training data as well.
      */
     reset() {
-        let model = tf.sequential();
-        model.add(tf.input({shape: [this._inputSize]}));
+        let input = tf.input({shape: [this._inputSize]});
+        let last = input;
         for (let i=0; i < this._numLayers; i++) {
-            model.add(tf.layers.dense({units: this._layout[i], activation: this._activation}));
+        	last = tf.layers.dense({units: this._layout[i], activation: this._activation}).apply(last);
         }
-        model.add(tf.layers.dense({units: 1, activation: 'linear'}));
-        model.compile(loss=this._loss, optimizer=this._optimizer, metrics=['mae']);
+        let output = tf.layers.dense({units: 1, activation: 'linear'}).apply(last);
+        let model = tf.model({inputs: input, outputs: output});
+        model.compile({loss: this._loss, optimizer: this._optimizer, metrics: ['mae']});
         this._model = model;
 
         this._training_x = [];
@@ -49,11 +50,11 @@ class Network {
 
     /**
      * Returns output prediction for a single input array.
-     * @param {number[]} x Input data. Must be of length inputSize.
-     * @return {number}
+     * @param {number[][]} x Input data. Array of arrays of size inputSize
+     * @return {number[]}
      */
     predict(x) {
-        return this._model.predict(tf.tensor(x)).arraySync()[0];
+        return this._model.predict(tf.tensor(x)).arraySync();
     }
 
     /**
@@ -70,7 +71,7 @@ class Network {
             this._model.fit(tf.tensor(this._training_x), tf.tensor(this._training_y), {
                 epochs: 1,
                 batchSize: 10,
-                verbose = 0
+                verbose: 0
             });
             this._training_x = [];
             this._training_y = [];
@@ -134,5 +135,17 @@ class Network {
     set optimizer(name) {
         this._optimizer = name;
         this.reset();
+    }
+
+    print_weights() {
+    	// this._model.weights.forEach(w => {
+    	// 	// console.log(w.name, w.shape);
+    	// 	console.log(w)
+    	// })
+    	this._model.getWeights().forEach(w => {
+    		w.data().then(v => {
+    			console.log(v);
+    		})
+    	})
     }
 }
