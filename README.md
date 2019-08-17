@@ -18,19 +18,19 @@ class Network
 class LearningAgent
 
 - constructor(network: Network, game: Game)
-- start(): 강화학습 한 번 하고 결과 점수 리턴
-- stop(): 유사시 강종
+- step(): 강화학습 한 번 하고 결과 점수 리턴
+- reset(): 유사시 강종
 
 
 
 ## Game
 
-- action_space
-- state_space
-- feature_function: list of features
+- action_space()
+- state_space()
+- feature_function(state, action): list of features
   - feature: (state, action) -> number
-- start(): 새 게임 시작
-- step(action)
+- reset(): 새 게임 시작
+- step(action): returns reward, done, new_state
 - render(): 게임 현재 화면을 `<canvas>`나 `<svg>`로 그려서 뱉는다
 
 - 팩맨으로하는게 좋을듯?
