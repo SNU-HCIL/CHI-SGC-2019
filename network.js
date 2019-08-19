@@ -2,7 +2,7 @@
 
 /**
  * Fully connected single output network using TensorFlow.js.
- * Changing any of the parameters will RESET the model and LOSE all previous training.
+ * Changing any of the parameters will RESET the model and FORGET all previous training.
  */
 class Network {
     /**
@@ -49,7 +49,7 @@ class Network {
     }
 
     /**
-     * Returns output prediction for a single input array.
+     * Returns output prediction for input arrays.
      * @param {number[][]} x Input data. Array of arrays of size inputSize
      * @return {number[]}
      */
@@ -70,7 +70,7 @@ class Network {
         if (this._training_x.length === this._batchSize) {
             this._model.fit(tf.tensor(this._training_x), tf.tensor(this._training_y), {
                 epochs: 1,
-                batchSize: 10,
+                batchSize: this._batchSize,
                 verbose: 0
             });
             this._training_x = [];
