@@ -38,7 +38,7 @@ class LearningAgent {
 			let f = game.feature_function(this._curState, a);
 			q_vals.push(this._network.predict([f]))[0];
 		})
-		let action = this.argmax(q_vals);
+		let action = Util.argmax(q_vals);
 
 		let reward, new_state, done = game.step(action);
 
@@ -50,7 +50,7 @@ class LearningAgent {
 		if (done) {
 			let target = reward;
 		} else {
-			let target = reward + this.dr * this.max(q_vals);	
+			let target = reward + this._dr * Util.max(q_vals);	
 		}
 
 		this._network.train(game.feature_function(this._curState, action), target);
@@ -69,22 +69,6 @@ class LearningAgent {
 		this._curState = game.reset();
 		this._done = false;
 		this._curTime = 0;
-	}
-
-	/**
-	 * @param {number[]} array
-	 * @return {int}
-	 */
-	argmax(array) {
-		return array.map((x, i) => [x, i]).reduce((r, a) => (a[0] > r[0] ? a : r))[1];
-	}
-
-	/**
-	 * @param {number[]} array
-	 * @return {number}
-	 */
-	max(array) {
-		return Math.max.apply(Math, array);
 	}
 
 	get game_finished() {
