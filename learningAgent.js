@@ -91,19 +91,31 @@ class LearningAgent {
 		return this._done;
 	}
 
+	/**
+	 * @param {number} rate
+	 */
 	set discount_rate(rate) {
 		this._dr = rate;
 	}
 
+	/**
+	 * @param {number} time 
+	 */
 	set timeout(time) {
 		this._timeout = time;
 	}
 
+	/**
+	 * @param {Network} network
+	 */
 	set network(network) {
 		this._network = network;
 		this.reset();
 	}
 
+	/**
+	 * @param {Game} game
+	 */
 	set game(game) {
 		this._game = game;
 		this.reset();
