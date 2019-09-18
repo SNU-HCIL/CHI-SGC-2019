@@ -69,10 +69,11 @@ class Game {
                 }
             }
         }
+        return this._state;
     }
 
     step(action) {
-        if (this._phase !== 0) return;
+        if (this._phase !== 0) return null;
 
         let action_performed = false;
         this._pacmans.forEach(element => {
@@ -80,9 +81,11 @@ class Game {
         });
 
         if (action_performed) {
-            this.nextPhase();
+            return this.nextPhase();
         }
-        // TODO after call step(), this._phase is set to 0
+        return null;
+        // after calling step(), this._phase is set to 0.
+        // It returns {reward: number, done: boolean, next_state: number[][]}
     }
 
     render() {
@@ -91,35 +94,111 @@ class Game {
 
     nextPhase() {
         this._phase = this._phase + 1;
-        if (this._phase === 1) {
-            this.calculateState();
-            // TODO death, render screen, ...
-            this.nextPhase();
+        let reward = 0;
+        let done = false;
+        if (this._phase === 1 || this._phace === 3) {
+            const {eaten, dead} = this.calculateState();
+            for (let element in eaten) {
+                reward += element.size * 10;
+                this._foods = this._foods.filter(function(value, index, array) {
+                    return value.id !== element.id ||
+                        value.position.x !== element.position.x ||
+                        value.position.y !== element.position.y;
+                })
+            }
+            for (let element in dead) {
+                reward -= 50;
+                this._pacmans = this._pacmans.filter(function(value, index, array) {
+                    return value.id !== element.id ||
+                        value.position.x !== element.position.x ||
+                        value.position.y !== element.position.y;
+                })
+            }
+            if (this._pacmans.length === 0) {
+                done = true;
+            }
+            else if (this._foods.length === 0) {
+                reward += 100;
+                done = true;
+            }
+            
+            this.render();
+
+            if (!done) {
+                let result = this.nextPhase();
+                return {reward: reward + result.reward, done: result.done, next_state: this._state}
+            }
+            return {reward: reward, done: done, next_state: this._state}
         }
         else if (this._phase === 2) {
-            // TODO Ghost moving
-        }
-        else if (this._phase === 3) {
-            this.calculateState();
-            // TODO death, reward, render screen, ...
-            this.nextPhase();
+            // *TODO* Ghost moving
+            return this.nextPhase();
         }
         else if (this._phase === 4) {
             this._turn = this._turn + 1;
             this._phase = 0;
             // Player's turn
+            return {reward: reward, done: done, next_state: this._state}
         }
     }
 
     calculateState() {
-        // TODO calculate this._state using this._pacmans, this._ghosts and this._foods
+        /* Update this._state */
+        for (let i = 0, line; line = this._state[i]; i++) {
+            for (let j = 0, id; id = line[j]; j++) {
+                if (id === -2) {
+                    this._state[i][j] = 0;
+                }
+                else if (id === -3) {
+                    if (this._foods.findIndex(element => {
+                            element.position.x === j && element.position.y === i
+                        }) === -1) {
+                        this._state[i][j] = 0;
+                    }
+                    else {
+                        this._state[i][j] = this._foods.find(element => {
+                            element.position.x === j && element.position.y === i
+                        }).size;
+                    }
+                }
+            }
+        }
+        for (let element in this._pacmans) {
+            this._state[element.position.y][element.position.x] = -2;
+        }
+        for (let element in this._ghosts) {
+            this._state[element.position.y][element.position.x] = -3;
+        }
+
+        /* Find objects that should be updated */
+        let eatenFoods = [];
+        let deadPacmans = [];
+        for (let element in this._pacmans) {
+            if (this._foods.findIndex(() => {
+                    element.position.x === j && element.position.y === i
+                }) !== -1) {
+                eatenFoods.push(this._foods.find(() => {
+                        element.position.x === j && element.position.y === i
+                    }));
+            }
+            if (this._ghosts.findIndex(() => {
+                    element.position.x === j && element.position.y === i
+                }) !== -1) {
+                deadPacmans.push(element);
+            }
+        }
+        return {eaten: eatenFoods, dead: deadPacmans};
+    }
+
+    get action_space() {
+        return ["left", "right", "down", "up"];
     }
 
     /**
      * If one of our pacmans can move to a direction, this action can be performed.
      * @return {string[]} may includes "left", "right", "down", "up".
      */
-    get action_space() {
+    get possible_actions() {
         let actions = [];
         if (this._pacmans.length < 1 || this._phase !== 0) return actions;
         this._pacmans.some(element => {
@@ -147,11 +226,6 @@ class Game {
             }
         });
         return actions;
-    }
-
-    get state_space() {
-        if (this._phase !== 0) return [];
-        // TODO
     }
 
     get feature_function(state, action) {
@@ -218,6 +292,10 @@ Game.Pacman = class {
     get id() {
         return this._id;
     }
+
+    get position() {
+        return {x: this._position_x, y: this._position_y};
+    }
 }
 
 Game.Ghost = class {
@@ -240,6 +318,10 @@ Game.Ghost = class {
     
     get id() {
         return this._id;
+    }
+
+    get position() {
+        return {x: this._position_x, y: this._position_y};
     }
 }
 
@@ -265,5 +347,9 @@ Game.Food = class {
 
     get size() {
         return this._size;
+    }
+
+    get position() {
+        return {x: this._position_x, y: this._position_y};
     }
 }
