@@ -26,6 +26,7 @@ class Game {
         this._initial_state = map_state;
         this._state = this._initial_state;  // 2D number array. Current state.
         this._map = [];                     // 2D boolean array. If not wall then set to true.
+        this._map_graph_tiles = [];         // Game.Tile array.
         this._turn = 0;                     // number. Elapsed turn after game start.
         this._phase = 0;                    // number. Who's turn?
             // 0: player's turn, 1: calculating state, 2: enemys' turn, 3: calculating state
@@ -42,6 +43,7 @@ class Game {
     reset() {
         this._state = this._initial_state;
         this._map = [];
+        this._map_graph_tiles = [];
         this._turn = 0;
         this._phase = 0;
         this._pacmans = [];
@@ -66,6 +68,9 @@ class Game {
                 }
                 else {
                     this._map[i].push(true);
+
+                    let left_tile = (j - 1) >= 0 && this._state[i][j - 1] !== -1;
+                    // *TODO* Tile building and appending this._map_graph_tiles
                 }
             }
         }
@@ -101,17 +106,17 @@ class Game {
             for (let element in eaten) {
                 reward += element.size * 10;
                 this._foods = this._foods.filter(function(value, index, array) {
-                    return value.id !== element.id ||
-                        value.position.x !== element.position.x ||
-                        value.position.y !== element.position.y;
+                    return value.id() !== element.id() ||
+                        value.position().x !== element.position().x ||
+                        value.position().y !== element.position().y;
                 })
             }
             for (let element in dead) {
                 reward -= 50;
                 this._pacmans = this._pacmans.filter(function(value, index, array) {
-                    return value.id !== element.id ||
-                        value.position.x !== element.position.x ||
-                        value.position.y !== element.position.y;
+                    return value.id() !== element.id() ||
+                        value.position().x !== element.position().x ||
+                        value.position().y !== element.position().y;
                 })
             }
             if (this._pacmans.length === 0) {
@@ -151,23 +156,23 @@ class Game {
                 }
                 else if (id === -3) {
                     if (this._foods.findIndex(element => {
-                            element.position.x === j && element.position.y === i
+                            element.position().x === j && element.position().y === i
                         }) === -1) {
                         this._state[i][j] = 0;
                     }
                     else {
                         this._state[i][j] = this._foods.find(element => {
-                            element.position.x === j && element.position.y === i
+                            element.position().x === j && element.position().y === i
                         }).size;
                     }
                 }
             }
         }
         for (let element in this._pacmans) {
-            this._state[element.position.y][element.position.x] = -2;
+            this._state[element.position().y][element.position().x] = -2;
         }
         for (let element in this._ghosts) {
-            this._state[element.position.y][element.position.x] = -3;
+            this._state[element.position().y][element.position().x] = -3;
         }
 
         /* Find objects that should be updated */
@@ -175,14 +180,14 @@ class Game {
         let deadPacmans = [];
         for (let element in this._pacmans) {
             if (this._foods.findIndex(() => {
-                    element.position.x === j && element.position.y === i
+                    element.position().x === j && element.position().y === i
                 }) !== -1) {
                 eatenFoods.push(this._foods.find(() => {
-                        element.position.x === j && element.position.y === i
+                        element.position().x === j && element.position().y === i
                     }));
             }
             if (this._ghosts.findIndex(() => {
-                    element.position.x === j && element.position.y === i
+                    element.position().x === j && element.position().y === i
                 }) !== -1) {
                 deadPacmans.push(element);
             }
@@ -202,25 +207,25 @@ class Game {
         let actions = [];
         if (this._pacmans.length < 1 || this._phase !== 0) return actions;
         this._pacmans.some(element => {
-            if (canPass(element._position_y, element._position_x - 1)) {
+            if (canPass(element.position().y, element.position().x - 1)) {
                 actions.push("left");
                 return true;
             }
         });
         this._pacmans.some(element => {
-            if (canPass(element._position_y, element._position_x + 1)) {
+            if (canPass(element.position().y, element.position().x + 1)) {
                 actions.push("right");
                 return true;
             }
         });
         this._pacmans.some(element => {
-            if (canPass(element._position_y - 1, element._position_x)) {
+            if (canPass(element.position().y - 1, element.position().x)) {
                 actions.push("down");
                 return true;
             }
         });
         this._pacmans.some(element => {
-            if (canPass(element._position_y + 1, element._position_x - 1)) {
+            if (canPass(element.position().y + 1, element.position().x - 1)) {
                 actions.push("up");
                 return true;
             }
@@ -246,6 +251,30 @@ class Game {
 
     get phase() {
         return this._phase;
+    }
+}
+
+Game.Tile = class {
+    /**
+     * Constructor for Tile
+     * @param {Game} game 
+     * @param {number} y 
+     * @param {number} x 
+     * @param {Tile[]} adjacents 
+     */
+    constructor(game, y, x, adjacents) {
+        this._game = game;
+        this._position_x = x;
+        this._position_y = y;
+        this._adjacents = adjacents;
+    }
+
+    get adjacents() {
+        return this._adjacents;
+    }
+
+    get pos_id() {
+        return 't' + this._position_x + '_' + this._position_y;
     }
 }
 
@@ -315,6 +344,29 @@ Game.Ghost = class {
     move() {
         // TODO
     }
+
+    reconstruct_path(came_from, current) {
+        let total_path = [current];
+        // TODO
+    }
+
+    /**
+     * A* finds a path from start to goal.
+     * @param {Tile} start 
+     * @param {Tile} goal 
+     * @param {function} h 
+     */
+    a_star(start, goal, h) {
+        let open_set = [start];
+        let came_from = {};
+        let g_score = {};
+        g_score[start.pos_id()] = 0;
+        let f_score = {};
+        f_score[start.pos_id()] = h(start);
+        // *TODO*
+    }
+    // `h` will be the straight-line distance to the goal
+    // (physically the smallest possible distance)
     
     get id() {
         return this._id;
