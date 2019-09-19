@@ -68,9 +68,39 @@ class Game {
                 }
                 else {
                     this._map[i].push(true);
+                    this._map_graph_tiles.push(new Game.Tile(this, i, j));
 
-                    let left_tile = (j - 1) >= 0 && this._state[i][j - 1] !== -1;
                     // *TODO* Tile building and appending this._map_graph_tiles
+                }
+            }
+        }
+        // Building Tile adjacent graph
+        for (let i = 0, line; line = this._state[i]; i++) {
+            for (let j = 0, id; id = line[j]; j++) {
+                if (id !== -1) {
+                    let tile = this._map_graph_tiles.find(element =>
+                        element.position().x === j && element.position().y === i);
+                    if ((j - 1) >= 0 && this._state[i][j - 1] !== -1) {
+                        // left tile is exist
+                        tile.add_adjacents(this._map_graph_tiles.find(element =>
+                            element.position().x === j - 1 && element.position().y === i));
+                    }
+                    if ((j + 1) < line.length && this._state[i][j + 1] !== -1) {
+                        // right tile is exist
+                        tile.add_adjacents(this._map_graph_tiles.find(element =>
+                            element.position().x === j + 1 && element.position().y === i));
+                    }
+                    if ((i - 1) >= 0 && this._state[i - 1][j] !== -1) {
+                        // up tile is exist
+                        tile.add_adjacents(this._map_graph_tiles.find(element =>
+                            element.position().x === j && element.position().y === i - 1));
+                    }
+                    if ((i + 1) < this._state.length && this._state[i + 1][j] !== -1) {
+                        // down tile is exist
+                        tile.add_adjacents(this._map_graph_tiles.find(element =>
+                            element.position().x === j && element.position().y === i + 1));
+                    }
+
                 }
             }
         }
@@ -136,7 +166,7 @@ class Game {
             return {reward: reward, done: done, next_state: this._state}
         }
         else if (this._phase === 2) {
-            // *TODO* Ghost moving
+            this._ghosts.forEach(element => element.move());
             return this.nextPhase();
         }
         else if (this._phase === 4) {
@@ -252,6 +282,14 @@ class Game {
     get phase() {
         return this._phase;
     }
+
+    get pacmans() {
+        return this._pacmans;
+    }
+
+    get map_graph_tiles() {
+        return this._map_graph_tiles;
+    }
 }
 
 Game.Tile = class {
@@ -260,13 +298,19 @@ Game.Tile = class {
      * @param {Game} game 
      * @param {number} y 
      * @param {number} x 
-     * @param {Tile[]} adjacents 
      */
-    constructor(game, y, x, adjacents) {
+    constructor(game, y, x) {
         this._game = game;
         this._position_x = x;
         this._position_y = y;
-        this._adjacents = adjacents;
+        this._adjacents = [];
+    }
+
+    /**
+     * @param {Game.Tile} tile
+     */
+    set add_adjacents(tile) {
+        this._adjacents.push(tile);
     }
 
     get adjacents() {
@@ -275,6 +319,10 @@ Game.Tile = class {
 
     get pos_id() {
         return 't' + this._position_x + '_' + this._position_y;
+    }
+
+    get position() {
+        return {x: this._position_x, y: this._position_y};
     }
 }
 
@@ -292,6 +340,11 @@ Game.Pacman = class {
         this._position_y = y;
     }
 
+    /**
+     * 
+     * @param {string} direction 
+     * @returns {boolean}
+     */
     move(direction) {
         let b = false;
         if (this._game.phase !== 0) return b;
@@ -342,31 +395,104 @@ Game.Ghost = class {
     }
 
     move() {
-        // TODO
-    }
+        if (this._game.phase !== 2) return false;
+        let min_path_length = Number.POSITIVE_INFINITY;
+        let min_path = [];
+        let my_tile = this._game.map_graph_tiles().find(element => 
+            element.position().x === this._position_x &&
+            element.position().y === this._position_y);
 
-    reconstruct_path(came_from, current) {
-        let total_path = [current];
-        // TODO
+        // Move toward the nearest pacman.
+        for (let pacman in this._game.pacmans()) {
+            let goal_tile = this._game.map_graph_tiles().find(element => 
+                element.position().x === pacman.position().x &&
+                element.position().y === pacman.position().y);
+            let path = this.a_star(my_tile, goal_tile);
+            if (path.length > 0 && min_path_length > 0 && path.length < min_path_length) {
+                min_path_length = path.length;
+                min_path = path;
+            }
+        }
+        if (min_path.length === 0) return false;
+
+        this._position_x = min_path[0].position().x;
+        this._position_y = min_path[0].position().y;
+        return true;
     }
 
     /**
-     * A* finds a path from start to goal.
-     * @param {Tile} start 
-     * @param {Tile} goal 
-     * @param {function} h 
+     * This method is used in a_star().
+     * @param {object} came_from 
+     * @param {Game.Tile} current 
+     * @returns {Game.Tile[]} total_path
      */
-    a_star(start, goal, h) {
+    reconstruct_path(came_from, current) {
+        let total_path = [current];
+        while (current.pos_id() in came_from) {
+            let new_current = came_from[current.pos_id()];
+            total_path.unshift(new_current);
+        }
+        return total_path;
+    }
+
+    /**
+     * A* finds a path from start to goal. (https://en.wikipedia.org/wiki/A*_search_algorithm)
+     * @param {Game.Tile} start 
+     * @param {Game.Tile} goal 
+     */
+    a_star(start, goal) {
+        // Heuristic function 'h' will be the straight-line Manhattan distance to the goal
+        // (physically the smallest possible distance)
+        let h = tile =>
+            Math.abs(goal.position().x - tile.position().x) +
+            Math.abs(goal.position().y - tile.position().y);
         let open_set = [start];
+        let closed_set = [];
         let came_from = {};
         let g_score = {};
         g_score[start.pos_id()] = 0;
         let f_score = {};
         f_score[start.pos_id()] = h(start);
-        // *TODO*
+
+        while (open_set.length > 0) {
+            let min_value = Number.POSITIVE_INFINITY;
+            let current = null;
+            for (let node in open_set) {
+                if (f_score[node.pos_id()] < min_value) {
+                    min_value = f_score[node.pos_id()];
+                    current = node;
+                }
+            }
+
+            if (current.pos_id() === goal.pos_id()) {
+                // Reached to goal!
+                return this.reconstruct_path(came_from, current)
+            }
+
+            open_set = open_set.filter(function(value, index, array) {
+                return value.pos_id() !== current.pos_id();
+            });
+            closed_set.push(current);
+            for (let neighbor in current.adjacents()) {
+                if (neighbor in closed_set) {
+                    continue;
+                }
+
+                // Adjacent tile distance is 1.
+                let tentative_g_score = g_score[current.pos_id()] + 1;
+                if (tentative_g_score < g_score[neighbor.pos_id()]) {
+                    came_from[neighbor.pos_id()] = current;
+                    g_score[neighbor.pos_id()] = tentative_g_score;
+                    f_score[neighbor.pos_id()] = g_score[neighbor.pos_id()] + h(neighbor);
+                    if (!(neighbor in open_set)) {
+                        open_set.push(neighbor);
+                    }
+                } 
+            }
+        }
+        // Goal was never reached.
+        return [];
     }
-    // `h` will be the straight-line distance to the goal
-    // (physically the smallest possible distance)
     
     get id() {
         return this._id;
