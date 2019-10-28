@@ -22,7 +22,7 @@ class Game {
      * Constructor for Pacman Game
      * @param {number[][]} map_state 
      */
-    constructor(map_state) {
+    constructor(map_state, board_ui) {
         this._initial_state = map_state;
         this._state = this._initial_state;  // 2D number array. Current state.
         this._map = [];                     // 2D boolean array. If not wall then set to true.
@@ -34,6 +34,7 @@ class Game {
         this._ghosts = [];                  // Game.Ghost array.
         this._foods = [];                   // Game.Food array.
         this._done = false;                 // boolean. Is game ends?
+        this._board_ui = board_ui;          // <div> element with id="board"
         this.reset();
     }
 
@@ -76,32 +77,33 @@ class Game {
         for (let i = 0, line; line = this._state[i]; i++) {
             for (let j = 0, id; id = line[j]; j++) {
                 if (id !== -1) {
-                    let tile = this._map_graph_tiles.find(element =>
-                        element.position().x === j && element.position().y === i);
+                    let tile = this._map_graph_tiles.find(element => 
+                        element.position.x === j && element.position.y === i);
                     if ((j - 1) >= 0 && this._state[i][j - 1] !== -1) {
                         // left tile is exist
                         tile.add_adjacents(this._map_graph_tiles.find(element =>
-                            element.position().x === j - 1 && element.position().y === i));
+                            element.position.x === j - 1 && element.position.y === i));
                     }
                     if ((j + 1) < line.length && this._state[i][j + 1] !== -1) {
                         // right tile is exist
                         tile.add_adjacents(this._map_graph_tiles.find(element =>
-                            element.position().x === j + 1 && element.position().y === i));
+                            element.position.x === j + 1 && element.position.y === i));
                     }
                     if ((i - 1) >= 0 && this._state[i - 1][j] !== -1) {
                         // up tile is exist
                         tile.add_adjacents(this._map_graph_tiles.find(element =>
-                            element.position().x === j && element.position().y === i - 1));
+                            element.position.x === j && element.position.y === i - 1));
                     }
                     if ((i + 1) < this._state.length && this._state[i + 1][j] !== -1) {
                         // down tile is exist
                         tile.add_adjacents(this._map_graph_tiles.find(element =>
-                            element.position().x === j && element.position().y === i + 1));
+                            element.position.x === j && element.position.y === i + 1));
                     }
 
                 }
             }
         }
+        this.render();
         return this._state;
     }
 
@@ -141,14 +143,14 @@ class Game {
                     html += `
                             <rect width="` + cellSize + `" height="` + cellSize + `" x="0" y="0" style="fill: rgb(255, 255, 255);"></rect>`;
                     html += `
-                            <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="fill: rgb(127, 127, 127);">G</text>`;
+                            <text x="` + cellSize * 0.5 + `" y="` + cellSize * 0.5 + `" dominant-baseline="middle" text-anchor="middle" style="fill: rgb(96, 96, 96);">G</text>`;
                 }
                 else if (state === -2) {
                     // Pacman
                     html += `
                             <rect width="` + cellSize + `" height="` + cellSize + `" x="0" y="0" style="fill: rgb(255, 255, 255);"></rect>`;
                     html += `
-                            <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="fill: rgb(216, 235, 64);">P</text>`;
+                            <text x="` + cellSize * 0.5 + `" y="` + cellSize * 0.5 + `" dominant-baseline="middle" text-anchor="middle" style="fill: rgb(96, 64, 235);">P</text>`;
                 }
                 else if (state === -1) {
                     // Wall
@@ -165,7 +167,7 @@ class Game {
                     html += `
                             <rect width="` + cellSize + `" height="` + cellSize + `" x="0" y="0" style="fill: rgb(255, 255, 255);"></rect>`;
                     html += `
-                            <circle r="` + (Math.min(state - 1, 5) * cellSize * 0.1 + cellSize * 0.25) + `" x="` + cellSize * 0.5 + `" y="` + cellSize * 0.5 + `" style="fill: rgb(96, 235, 64);"></circle>`;
+                            <circle r="` + (Math.min(state - 1, 5) * cellSize * 0.05 + cellSize * 0.125) + `" cx="` + cellSize * 0.5 + `" cy="` + cellSize * 0.5 + `" style="fill: rgb(96, 235, 64);"></circle>`;
                 }
                 html += `
                         </g>`;
@@ -176,16 +178,19 @@ class Game {
         html += `
                 </g>
             </svg>`;
-        return html;
+        while (this._board_ui.hasChildNodes()) {
+            this._board_ui.removeChild(this._board_ui.firstChild);
+        }
+        this._board_ui.insertAdjacentHTML('beforeend', html);
     }
 
     nextPhase() {
         this._phase = this._phase + 1;
         let reward = 0;
         let done = false;
-        if (this._phase === 1 || this._phace === 3) {
+        if (this._phase === 1 || this._phase === 3) {
             const {eaten, dead} = this.calculateState();
-            for (let element in eaten) {
+            for (let element of eaten) {
                 reward += element.size * 10;
                 this._foods = this._foods.filter(function(value, index, array) {
                     return value.id() !== element.id() ||
@@ -193,7 +198,7 @@ class Game {
                         value.position().y !== element.position().y;
                 })
             }
-            for (let element in dead) {
+            for (let element of dead) {
                 reward -= 50;
                 this._pacmans = this._pacmans.filter(function(value, index, array) {
                     return value.id() !== element.id() ||
@@ -231,45 +236,50 @@ class Game {
 
     calculateState() {
         /* Update this._state */
-        for (let i = 0, line; line = this._state[i]; i++) {
-            for (let j = 0, id; id = line[j]; j++) {
-                if (id === -2) {
+        console.log(this._state);
+        for (let i = 0; i < this._state.length; i++) {
+            for (let j = 0; j < this._state[i].length; j++) {
+                let id = this._state[i][j];
+                console.log(i + ', ' + j + ' -> ' + id);
+                if (id === -2 && this.phase === 1) {
+                    console.log("hello");
                     this._state[i][j] = 0;
                 }
-                else if (id === -3) {
+                else if (id === -3 && this.phase === 3) {
                     if (this._foods.findIndex(element => {
-                            element.position().x === j && element.position().y === i
+                            element.position.x === j && element.position.y === i
                         }) === -1) {
                         this._state[i][j] = 0;
                     }
                     else {
                         this._state[i][j] = this._foods.find(element => {
-                            element.position().x === j && element.position().y === i
+                            element.position.x === j && element.position.y === i
                         }).size;
                     }
                 }
             }
         }
-        for (let element in this._pacmans) {
-            this._state[element.position().y][element.position().x] = -2;
+        console.log(this._pacmans.length);
+        for (let element of this._pacmans) {
+            this._state[element.position.y][element.position.x] = -2;
         }
-        for (let element in this._ghosts) {
-            this._state[element.position().y][element.position().x] = -3;
+        for (let element of this._ghosts) {
+            this._state[element.position.y][element.position.x] = -3;
         }
 
         /* Find objects that should be updated */
         let eatenFoods = [];
         let deadPacmans = [];
-        for (let element in this._pacmans) {
-            if (this._foods.findIndex(() => {
-                    element.position().x === j && element.position().y === i
+        for (let element of this._pacmans) {
+            if (this._foods.findIndex((food) => {
+                    element.position.x === food.position.x && element.position.y === food.position.y
                 }) !== -1) {
-                eatenFoods.push(this._foods.find(() => {
-                        element.position().x === j && element.position().y === i
+                eatenFoods.push(this._foods.find((food) => {
+                        element.position.x === food.position.x && element.position.y === food.position.y
                     }));
             }
-            if (this._ghosts.findIndex(() => {
-                    element.position().x === j && element.position().y === i
+            if (this._ghosts.findIndex((ghost) => {
+                    element.position.x === ghost.position.x && element.position.y === ghost.position.y
                 }) !== -1) {
                 deadPacmans.push(element);
             }
@@ -289,42 +299,43 @@ class Game {
         let actions = [];
         if (this._pacmans.length < 1 || this._phase !== 0) return actions;
         this._pacmans.some(element => {
-            if (canPass(element.position().y, element.position().x - 1)) {
+            if (canPass(element.position.y, element.position.x - 1)) {
                 actions.push("left");
                 return true;
             }
         });
         this._pacmans.some(element => {
-            if (canPass(element.position().y, element.position().x + 1)) {
+            if (canPass(element.position.y, element.position.x + 1)) {
                 actions.push("right");
                 return true;
             }
         });
         this._pacmans.some(element => {
-            if (canPass(element.position().y - 1, element.position().x)) {
+            if (canPass(element.position.y - 1, element.position.x)) {
                 actions.push("down");
                 return true;
             }
         });
         this._pacmans.some(element => {
-            if (canPass(element.position().y + 1, element.position().x - 1)) {
+            if (canPass(element.position.y + 1, element.position.x - 1)) {
                 actions.push("up");
                 return true;
             }
         });
         return actions;
     }
-
+    /*
     get feature_function(state, action) {
         // TODO
     }
+    */
 
     /**
 	 * @param {number} y
 	 * @param {number} x
 	 * @return {boolean}
 	 */
-    get canPass(y, x) {
+    canPass(y, x) {
         if (y < 0 || y >= this._map.length ||
             x < 0 || x >= this._map[y].length)
             return false;
@@ -361,7 +372,7 @@ Game.Tile = class {
     /**
      * @param {Game.Tile} tile
      */
-    set add_adjacents(tile) {
+    add_adjacents(tile) {
         this._adjacents.push(tile);
     }
 
@@ -416,7 +427,7 @@ Game.Pacman = class {
             b = true;
         }
         else if (direction === "up" &&
-            this._game.canPass(this._position_y + 1, this._position_x - 1)) {
+            this._game.canPass(this._position_y + 1, this._position_x)) {
             this._position_y = this._position_y + 1;
             b = true;
         }
@@ -450,15 +461,15 @@ Game.Ghost = class {
         if (this._game.phase !== 2) return false;
         let min_path_length = Number.POSITIVE_INFINITY;
         let min_path = [];
-        let my_tile = this._game.map_graph_tiles().find(element => 
-            element.position().x === this._position_x &&
-            element.position().y === this._position_y);
+        let my_tile = this._game.map_graph_tiles.find(element => 
+            element.position.x === this._position_x &&
+            element.position.y === this._position_y);
 
         // Move toward the nearest pacman.
-        for (let pacman in this._game.pacmans()) {
-            let goal_tile = this._game.map_graph_tiles().find(element => 
-                element.position().x === pacman.position().x &&
-                element.position().y === pacman.position().y);
+        for (let pacman of this._game.pacmans) {
+            let goal_tile = this._game.map_graph_tiles.find(element => 
+                element.position.x === pacman.position.x &&
+                element.position.y === pacman.position.y);
             let path = this.a_star(my_tile, goal_tile);
             if (path.length > 0 && min_path_length > 0 && path.length < min_path_length) {
                 min_path_length = path.length;
@@ -467,8 +478,8 @@ Game.Ghost = class {
         }
         if (min_path.length === 0) return false;
 
-        this._position_x = min_path[0].position().x;
-        this._position_y = min_path[0].position().y;
+        this._position_x = min_path[0].position.x;
+        this._position_y = min_path[0].position.y;
         return true;
     }
 
@@ -480,8 +491,8 @@ Game.Ghost = class {
      */
     reconstruct_path(came_from, current) {
         let total_path = [current];
-        while (current.pos_id() in came_from) {
-            let new_current = came_from[current.pos_id()];
+        while (current.pos_id in came_from) {
+            let new_current = came_from[current.pos_id];
             total_path.unshift(new_current);
         }
         return total_path;
@@ -495,47 +506,48 @@ Game.Ghost = class {
     a_star(start, goal) {
         // Heuristic function 'h' will be the straight-line Manhattan distance to the goal
         // (physically the smallest possible distance)
-        let h = tile =>
-            Math.abs(goal.position().x - tile.position().x) +
-            Math.abs(goal.position().y - tile.position().y);
+        let h = tile => 
+            Math.abs(goal.position.x - tile.position.x) +
+            Math.abs(goal.position.y - tile.position.y);
         let open_set = [start];
         let closed_set = [];
         let came_from = {};
         let g_score = {};
-        g_score[start.pos_id()] = 0;
+        g_score[start.pos_id] = 0;
         let f_score = {};
-        f_score[start.pos_id()] = h(start);
+        f_score[start.pos_id] = h(start);
 
         while (open_set.length > 0) {
             let min_value = Number.POSITIVE_INFINITY;
             let current = null;
-            for (let node in open_set) {
-                if (f_score[node.pos_id()] < min_value) {
-                    min_value = f_score[node.pos_id()];
+            for (let node of open_set) {
+                if (f_score[node.pos_id] < min_value) {
+                    min_value = f_score[node.pos_id];
                     current = node;
                 }
             }
 
-            if (current.pos_id() === goal.pos_id()) {
+            if (current.pos_id === goal.pos_id) {
                 // Reached to goal!
                 return this.reconstruct_path(came_from, current)
             }
 
             open_set = open_set.filter(function(value, index, array) {
-                return value.pos_id() !== current.pos_id();
+                return value.pos_id !== current.pos_id;
             });
             closed_set.push(current);
-            for (let neighbor in current.adjacents()) {
+            for (let neighbor in current.adjacents) {
                 if (neighbor in closed_set) {
                     continue;
                 }
+                console.log(neighbor);
 
                 // Adjacent tile distance is 1.
-                let tentative_g_score = g_score[current.pos_id()] + 1;
-                if (tentative_g_score < g_score[neighbor.pos_id()]) {
-                    came_from[neighbor.pos_id()] = current;
-                    g_score[neighbor.pos_id()] = tentative_g_score;
-                    f_score[neighbor.pos_id()] = g_score[neighbor.pos_id()] + h(neighbor);
+                let tentative_g_score = g_score[current.pos_id] + 1;
+                if (tentative_g_score < g_score[neighbor.pos_id]) {
+                    came_from[neighbor.pos_id] = current;
+                    g_score[neighbor.pos_id] = tentative_g_score;
+                    f_score[neighbor.pos_id] = g_score[neighbor.pos_id] + h(neighbor);
                     if (!(neighbor in open_set)) {
                         open_set.push(neighbor);
                     }
