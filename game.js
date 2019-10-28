@@ -69,8 +69,6 @@ class Game {
                 else {
                     this._map[i].push(true);
                     this._map_graph_tiles.push(new Game.Tile(this, i, j));
-
-                    // *TODO* Tile building and appending this._map_graph_tiles
                 }
             }
         }
@@ -124,7 +122,61 @@ class Game {
     }
 
     render() {
-        // TODO
+        let cellSize = 40;
+        let margin = {top: 30, bottom: 30, left: 30, right: 30};
+        let xSize = this._state[0].length;
+        let ySize = this._state.length;
+        let html = `
+            <svg width=` + (cellSize * xSize + margin.left + margin.right) + ` height=` + (cellSize * ySize + margin.top + margin.bottom) + `>
+                <g class="board" transform="translate(` + margin.left + `, ` + margin.top + `)">`;
+        for (let i = 0; i < ySize; i++) {
+            html += `
+                    <g class="board-row" transform="translate(0, ` + (cellSize * i) + `)">`;
+            for (let j = 0; j < xSize; j++) {
+                html += `
+                        <g class="board-cell" transform="translate(` + (cellSize * j) + `, 0)">`;
+                let state = this._state[i][j];
+                if (state === -3) {
+                    // Ghost
+                    html += `
+                            <rect width="` + cellSize + `" height="` + cellSize + `" x="0" y="0" style="fill: rgb(255, 255, 255);"></rect>`;
+                    html += `
+                            <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="fill: rgb(127, 127, 127);">G</text>`;
+                }
+                else if (state === -2) {
+                    // Pacman
+                    html += `
+                            <rect width="` + cellSize + `" height="` + cellSize + `" x="0" y="0" style="fill: rgb(255, 255, 255);"></rect>`;
+                    html += `
+                            <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" style="fill: rgb(216, 235, 64);">P</text>`;
+                }
+                else if (state === -1) {
+                    // Wall
+                    html += `
+                            <rect width="` + cellSize + `" height="` + cellSize + `" x="0" y="0" style="fill: rgb(0, 0, 0);"></rect>`;
+                }
+                else if (state === 0) {
+                    // empty
+                    html += `
+                            <rect width="` + cellSize + `" height="` + cellSize + `" x="0" y="0" style="fill: rgb(255, 255, 255);"></rect>`;
+                }
+                else if (state > 0) {
+                    // Food
+                    html += `
+                            <rect width="` + cellSize + `" height="` + cellSize + `" x="0" y="0" style="fill: rgb(255, 255, 255);"></rect>`;
+                    html += `
+                            <circle r="` + (Math.min(state - 1, 5) * cellSize * 0.1 + cellSize * 0.25) + `" x="` + cellSize * 0.5 + `" y="` + cellSize * 0.5 + `" style="fill: rgb(96, 235, 64);"></circle>`;
+                }
+                html += `
+                        </g>`;
+            }
+            html += `
+                    </g>`;
+        }
+        html += `
+                </g>
+            </svg>`;
+        return html;
     }
 
     nextPhase() {
