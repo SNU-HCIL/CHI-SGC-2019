@@ -22,7 +22,7 @@ class Game {
      * Constructor for Pacman Game
      * @param {number[][]} map_state 
      */
-    constructor(map_state, board_ui) {
+    constructor(map_state, board_ui, notice_ui) {
         this._initial_state = map_state;
         this._state = this._initial_state;  // 2D number array. Current state.
         this._map = [];                     // 2D boolean array. If not wall then set to true.
@@ -35,6 +35,7 @@ class Game {
         this._foods = [];                   // Game.Food array.
         this._done = false;                 // boolean. Is game ends?
         this._board_ui = board_ui;          // <div> element with id="board"
+        this._notice_ui = notice_ui;        // <div> element with id="notice"
         this.reset();
     }
 
@@ -51,9 +52,10 @@ class Game {
         this._ghosts = [];
         this._foods = [];
         this._done = false;
-        for (let i = 0, line; line = this._state[i]; i++) {
+        for (let i = 0; i < this._state.length; i++) {
             this._map.push([]);
-            for (let j = 0, id; id = line[j]; j++) {
+            for (let j = 0; j < this._state[i].length; j++) {
+                let id = this._state[i][j];
                 if (id > 0) {
                     this._foods.push(new Game.Food(this, id, i, j));
                 }
@@ -74,8 +76,9 @@ class Game {
             }
         }
         // Building Tile adjacent graph
-        for (let i = 0, line; line = this._state[i]; i++) {
-            for (let j = 0, id; id = line[j]; j++) {
+        for (let i = 0; i < this._state.length; i++) {
+            for (let j = 0; j < this._state[i].length; j++) {
+                let id = this._state[i][j];
                 if (id !== -1) {
                     let tile = this._map_graph_tiles.find(element => 
                         element.position.x === j && element.position.y === i);
@@ -84,7 +87,7 @@ class Game {
                         tile.add_adjacents(this._map_graph_tiles.find(element =>
                             element.position.x === j - 1 && element.position.y === i));
                     }
-                    if ((j + 1) < line.length && this._state[i][j + 1] !== -1) {
+                    if ((j + 1) < this._state[i].length && this._state[i][j + 1] !== -1) {
                         // right tile is exist
                         tile.add_adjacents(this._map_graph_tiles.find(element =>
                             element.position.x === j + 1 && element.position.y === i));
@@ -193,17 +196,17 @@ class Game {
             for (let element of eaten) {
                 reward += element.size * 10;
                 this._foods = this._foods.filter(function(value, index, array) {
-                    return value.id() !== element.id() ||
-                        value.position().x !== element.position().x ||
-                        value.position().y !== element.position().y;
+                    return value.id !== element.id ||
+                        value.position.x !== element.position.x ||
+                        value.position.y !== element.position.y;
                 })
             }
             for (let element of dead) {
                 reward -= 50;
                 this._pacmans = this._pacmans.filter(function(value, index, array) {
-                    return value.id() !== element.id() ||
-                        value.position().x !== element.position().x ||
-                        value.position().y !== element.position().y;
+                    return value.id !== element.id ||
+                        value.position.x !== element.position.x ||
+                        value.position.y !== element.position.y;
                 })
             }
             if (this._pacmans.length === 0) {
@@ -236,30 +239,26 @@ class Game {
 
     calculateState() {
         /* Update this._state */
-        console.log(this._state);
         for (let i = 0; i < this._state.length; i++) {
             for (let j = 0; j < this._state[i].length; j++) {
                 let id = this._state[i][j];
-                console.log(i + ', ' + j + ' -> ' + id);
                 if (id === -2 && this.phase === 1) {
-                    console.log("hello");
                     this._state[i][j] = 0;
                 }
                 else if (id === -3 && this.phase === 3) {
                     if (this._foods.findIndex(element => {
-                            element.position.x === j && element.position.y === i
+                            return element.position.x === j && element.position.y === i
                         }) === -1) {
                         this._state[i][j] = 0;
                     }
                     else {
                         this._state[i][j] = this._foods.find(element => {
-                            element.position.x === j && element.position.y === i
+                            return element.position.x === j && element.position.y === i
                         }).size;
                     }
                 }
             }
         }
-        console.log(this._pacmans.length);
         for (let element of this._pacmans) {
             this._state[element.position.y][element.position.x] = -2;
         }
@@ -272,14 +271,14 @@ class Game {
         let deadPacmans = [];
         for (let element of this._pacmans) {
             if (this._foods.findIndex((food) => {
-                    element.position.x === food.position.x && element.position.y === food.position.y
+                    return element.position.x == food.position.x && element.position.y == food.position.y
                 }) !== -1) {
                 eatenFoods.push(this._foods.find((food) => {
-                        element.position.x === food.position.x && element.position.y === food.position.y
+                        return element.position.x === food.position.x && element.position.y === food.position.y
                     }));
             }
             if (this._ghosts.findIndex((ghost) => {
-                    element.position.x === ghost.position.x && element.position.y === ghost.position.y
+                    return element.position.x === ghost.position.x && element.position.y === ghost.position.y
                 }) !== -1) {
                 deadPacmans.push(element);
             }
@@ -476,10 +475,10 @@ Game.Ghost = class {
                 min_path = path;
             }
         }
-        if (min_path.length === 0) return false;
+        if (min_path.length <= 1) return false;
 
-        this._position_x = min_path[0].position.x;
-        this._position_y = min_path[0].position.y;
+        this._position_x = min_path[1].position.x;
+        this._position_y = min_path[1].position.y;
         return true;
     }
 
@@ -492,8 +491,8 @@ Game.Ghost = class {
     reconstruct_path(came_from, current) {
         let total_path = [current];
         while (current.pos_id in came_from) {
-            let new_current = came_from[current.pos_id];
-            total_path.unshift(new_current);
+            current = came_from[current.pos_id];
+            total_path.unshift(current);
         }
         return total_path;
     }
@@ -536,14 +535,16 @@ Game.Ghost = class {
                 return value.pos_id !== current.pos_id;
             });
             closed_set.push(current);
-            for (let neighbor in current.adjacents) {
+            for (let neighbor of current.adjacents) {
                 if (neighbor in closed_set) {
                     continue;
                 }
-                console.log(neighbor);
 
                 // Adjacent tile distance is 1.
                 let tentative_g_score = g_score[current.pos_id] + 1;
+                if (!(neighbor.pos_id in g_score)) {
+                    g_score[neighbor.pos_id] = Number.POSITIVE_INFINITY;
+                }
                 if (tentative_g_score < g_score[neighbor.pos_id]) {
                     came_from[neighbor.pos_id] = current;
                     g_score[neighbor.pos_id] = tentative_g_score;
