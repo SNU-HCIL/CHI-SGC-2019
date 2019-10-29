@@ -115,7 +115,7 @@ class Game {
 
         let action_performed = false;
         this._pacmans.forEach(element => {
-            action_performed = action_performed || element.move(action);
+            action_performed = element.move(action) || action_performed;
         });
 
         if (action_performed) {
@@ -145,15 +145,21 @@ class Game {
                     // Ghost
                     html += `
                             <rect width="` + cellSize + `" height="` + cellSize + `" x="0" y="0" style="fill: rgb(255, 255, 255);"></rect>`;
+                    /*
                     html += `
                             <text x="` + cellSize * 0.5 + `" y="` + cellSize * 0.5 + `" dominant-baseline="middle" text-anchor="middle" style="fill: rgb(96, 96, 96);">G</text>`;
+                    */
+                    html += `<image xlink:href="img/Ghost.bmp" height="` + cellSize + `" width="` + cellSize + `"></image>`;
                 }
                 else if (state === -2) {
                     // Pacman
                     html += `
                             <rect width="` + cellSize + `" height="` + cellSize + `" x="0" y="0" style="fill: rgb(255, 255, 255);"></rect>`;
+                    /*
                     html += `
                             <text x="` + cellSize * 0.5 + `" y="` + cellSize * 0.5 + `" dominant-baseline="middle" text-anchor="middle" style="fill: rgb(96, 64, 235);">P</text>`;
+                    */
+                    html += `<image xlink:href="img/Pacman.bmp" height="` + cellSize + `" width="` + cellSize + `"></image>`;
                 }
                 else if (state === -1) {
                     // Wall
@@ -285,6 +291,26 @@ class Game {
         }
         return {eaten: eatenFoods, dead: deadPacmans};
     }
+    
+    /**
+	 * @param {number} y
+	 * @param {number} x
+	 * @return {boolean}
+	 */
+    canPass(y, x) {
+        if (y < 0 || y >= this._map.length ||
+            x < 0 || x >= this._map[y].length)
+            return false;
+        if (this._phase === 0 &&
+            this._pacmans.findIndex(pacman => pacman.position.x === x && pacman.position.y === y) !== -1) {
+            return false;
+        }
+        if (this._phase === 2 &&
+            this._ghosts.findIndex(ghost => ghost.position.x === x && ghost.position.y === y) !== -1) {
+            return false;
+        }
+        return this._map[y][x];
+    }
 
     get action_space() {
         return ["left", "right", "down", "up"];
@@ -298,28 +324,32 @@ class Game {
         let actions = [];
         if (this._pacmans.length < 1 || this._phase !== 0) return actions;
         this._pacmans.some(element => {
-            if (canPass(element.position.y, element.position.x - 1)) {
+            if (this.canPass(element.position.y, element.position.x - 1)) {
                 actions.push("left");
                 return true;
             }
+            return false;
         });
         this._pacmans.some(element => {
-            if (canPass(element.position.y, element.position.x + 1)) {
+            if (this.canPass(element.position.y, element.position.x + 1)) {
                 actions.push("right");
                 return true;
             }
+            return false;
         });
         this._pacmans.some(element => {
-            if (canPass(element.position.y - 1, element.position.x)) {
+            if (this.canPass(element.position.y + 1, element.position.x)) {
                 actions.push("down");
                 return true;
             }
+            return false;
         });
         this._pacmans.some(element => {
-            if (canPass(element.position.y + 1, element.position.x - 1)) {
+            if (this.canPass(element.position.y - 1, element.position.x)) {
                 actions.push("up");
                 return true;
             }
+            return false;
         });
         return actions;
     }
@@ -328,18 +358,6 @@ class Game {
         // TODO
     }
     */
-
-    /**
-	 * @param {number} y
-	 * @param {number} x
-	 * @return {boolean}
-	 */
-    canPass(y, x) {
-        if (y < 0 || y >= this._map.length ||
-            x < 0 || x >= this._map[y].length)
-            return false;
-        return this._map[y][x];
-    }
 
     get phase() {
         return this._phase;
@@ -421,13 +439,13 @@ Game.Pacman = class {
             b = true;
         }
         else if (direction === "down" &&
-            this._game.canPass(this._position_y - 1, this._position_x)) {
-            this._position_y = this._position_y - 1;
+            this._game.canPass(this._position_y + 1, this._position_x)) {
+            this._position_y = this._position_y + 1;
             b = true;
         }
         else if (direction === "up" &&
-            this._game.canPass(this._position_y + 1, this._position_x)) {
-            this._position_y = this._position_y + 1;
+            this._game.canPass(this._position_y - 1, this._position_x)) {
+            this._position_y = this._position_y - 1;
             b = true;
         }
         return b;
@@ -536,7 +554,10 @@ Game.Ghost = class {
             });
             closed_set.push(current);
             for (let neighbor of current.adjacents) {
-                if (neighbor in closed_set) {
+                if (neighbor in closed_set || 
+                    this._game._ghosts.findIndex(ghost =>
+                        ghost.position.x === neighbor.position.x &&
+                        ghost.position.y === neighbor.position.y) !== -1) {
                     continue;
                 }
 
