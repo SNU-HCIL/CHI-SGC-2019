@@ -145,21 +145,19 @@ class Game {
                     // Ghost
                     html += `
                             <rect width="` + cellSize + `" height="` + cellSize + `" x="0" y="0" style="fill: rgb(255, 255, 255);"></rect>`;
-                    /*
-                    html += `
-                            <text x="` + cellSize * 0.5 + `" y="` + cellSize * 0.5 + `" dominant-baseline="middle" text-anchor="middle" style="fill: rgb(96, 96, 96);">G</text>`;
-                    */
                     html += `<image xlink:href="img/Ghost.bmp" height="` + cellSize + `" width="` + cellSize + `"></image>`;
+                    html += `
+                            <text x="` + cellSize * 0.5 + `" y="` + cellSize * 0.5 + `" dominant-baseline="middle" text-anchor="middle" font-size="10" style="fill: rgb(235, 32, 64);">` + 
+                            this._ghosts.find(ghost => ghost.position.x === j && ghost.position.y === i).ghost_num + `</text>`;
                 }
                 else if (state === -2) {
                     // Pacman
                     html += `
                             <rect width="` + cellSize + `" height="` + cellSize + `" x="0" y="0" style="fill: rgb(255, 255, 255);"></rect>`;
-                    /*
-                    html += `
-                            <text x="` + cellSize * 0.5 + `" y="` + cellSize * 0.5 + `" dominant-baseline="middle" text-anchor="middle" style="fill: rgb(96, 64, 235);">P</text>`;
-                    */
                     html += `<image xlink:href="img/Pacman.bmp" height="` + cellSize + `" width="` + cellSize + `"></image>`;
+                    html += `
+                    <text x="` + cellSize * 0.5 + `" y="` + cellSize * 0.5 + `" dominant-baseline="middle" text-anchor="middle" font-size="10" style="fill: rgb(235, 216, 64);">` +
+                    this._pacmans.find(pacman => pacman.position.x === j && pacman.position.y === i).pacman_num + `</text>`;
                 }
                 else if (state === -1) {
                     // Wall
@@ -173,10 +171,12 @@ class Game {
                 }
                 else if (state > 0) {
                     // Food
+                    let img;
+                    if (state < 3) img = 'Food1.bmp';
+                    else img = 'Food2.bmp';
                     html += `
                             <rect width="` + cellSize + `" height="` + cellSize + `" x="0" y="0" style="fill: rgb(255, 255, 255);"></rect>`;
-                    html += `
-                            <circle r="` + (Math.min(state - 1, 5) * cellSize * 0.05 + cellSize * 0.125) + `" cx="` + cellSize * 0.5 + `" cy="` + cellSize * 0.5 + `" style="fill: rgb(96, 235, 64);"></circle>`;
+                    html += `<image xlink:href="img/` + img + `" height="` + cellSize + `" width="` + cellSize + `"></image>`;
                 }
                 html += `
                         </g>`;
@@ -407,6 +407,8 @@ Game.Tile = class {
 }
 
 Game.Pacman = class {
+    static count = 0;
+
     /**
      * Constructor for Pacman
      * @param {Game} game
@@ -414,7 +416,9 @@ Game.Pacman = class {
      * @param {number} x 
      */
     constructor(game, y, x) {
+        Game.Pacman.count++;
         this._id = -2;
+        this._pacman_num = Game.Pacman.count;
         this._game = game;
         this._position_x = x;
         this._position_y = y;
@@ -458,9 +462,15 @@ Game.Pacman = class {
     get position() {
         return {x: this._position_x, y: this._position_y};
     }
+
+    get pacman_num() {
+        return this._pacman_num;
+    }
 }
 
 Game.Ghost = class {
+    static count = 0;
+
     /**
      * Constructor for Ghost
      * @param {Game} game
@@ -468,7 +478,9 @@ Game.Ghost = class {
      * @param {number} x 
      */
     constructor(game, y, x) {
+        Game.Ghost.count++;
         this._id = -3;
+        this._ghost_num = Game.Ghost.count;
         this._game = game;
         this._position_x = x;
         this._position_y = y;
@@ -558,6 +570,7 @@ Game.Ghost = class {
                     this._game._ghosts.findIndex(ghost =>
                         ghost.position.x === neighbor.position.x &&
                         ghost.position.y === neighbor.position.y) !== -1) {
+                    // Other ghosts are also treated as obstacles
                     continue;
                 }
 
@@ -586,6 +599,10 @@ Game.Ghost = class {
 
     get position() {
         return {x: this._position_x, y: this._position_y};
+    }
+
+    get ghost_num() {
+        return this._ghost_num;
     }
 }
 
