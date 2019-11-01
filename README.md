@@ -26,7 +26,8 @@ class LearningAgent
 ## Game
 
 - action_space
-- state_space()
+- possible_actions: current state에서 취할 수 있는 액션들을 리턴
+- ~~state_space()~~ 생각해 보니 state space 자체를 알아야 할 경우는 없을듯
 - state: current state
 - feature_function(): all features (object type)
 - feature_function(feature_name): one of the features
