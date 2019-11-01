@@ -311,9 +311,577 @@ class Game {
         }
         return this._map[y][x];
     }
+    
+    /**
+     * All features are computed by the state used in render function.
+     * This state may differ from the genuine state used internally!
+     * @param {string} [feature_name]
+     * @return {function(number[][], string) => *}
+     */
+    feature_function(feature_name) {
+        let features = {};
+        features["pacmanPositions"] = (s, a) => {
+            let list = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -2) list.push({x: j, y: i});
+                }
+            }
+            return list;
+        };
+        features["foodPositions"] = (s, a) => {
+            let list = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] >= 1) list.push({x: j, y: i});
+                }
+            }
+            return list;
+        };
+        features["numberOfFoods"] = (s, a) => {
+            let count = 0;
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] >= 1) count++;
+                }
+            }
+            return count;
+        };
+        features["ghostPositions"] = (s, a) => {
+            let list = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -3) list.push({x: j, y: i});
+                }
+            }
+            return list;
+        };
+        features["numberOfGhosts"] = (s, a) => {
+            let count = 0;
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -3) count++;
+                }
+            }
+            return count;
+        };
+        features["distanceToTheClosestFoodInEuclidian"] = (s, a) => {
+            let foodList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] >= 1) foodList.push({x: j, y: i});
+                }
+            }
+            let pacmanList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -2) pacmanList.push({x: j, y: i});
+                }
+            }
+            let distance = Number.POSITIVE_INFINITY;
+            for (let food of foodList) {
+                for (let pacman of pacmanList) {
+                    let d = Math.pow(food.x - pacman.x, 2) + Math.pow(food.y - pacman.y, 2);
+                    if (distance > d) distance = d;
+                }
+            }
+            return Math.sqrt(distance);
+        };
+        features["distanceToTheClosestFoodInManhattan"] = (s, a) => {
+            let foodList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] >= 1) foodList.push({x: j, y: i});
+                }
+            }
+            let pacmanList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -2) pacmanList.push({x: j, y: i});
+                }
+            }
+            let distance = Number.POSITIVE_INFINITY;
+            for (let food of foodList) {
+                for (let pacman of pacmanList) {
+                    let d = Math.abs(food.x - pacman.x) + Math.abs(food.y - pacman.y);
+                    if (distance > d) distance = d;
+                }
+            }
+            return distance;
+        };
+        features["distanceToTheClosestFoodInChebyshev"] = (s, a) => {
+            let foodList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] >= 1) foodList.push({x: j, y: i});
+                }
+            }
+            let pacmanList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -2) pacmanList.push({x: j, y: i});
+                }
+            }
+            let distance = Number.POSITIVE_INFINITY;
+            for (let food of foodList) {
+                for (let pacman of pacmanList) {
+                    let d = Math.max(Math.abs(food.x - pacman.x), Math.abs(food.y - pacman.y));
+                    if (distance > d) distance = d;
+                }
+            }
+            return distance;
+        };
+        features["distanceToTheClosestFoodInReal"] = (s, a) => {
+            let foodList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] >= 1) foodList.push({x: j, y: i});
+                }
+            }
+            let pacmanList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -2) pacmanList.push({x: j, y: i});
+                }
+            }
+            let distance = Number.POSITIVE_INFINITY;
+            for (let pacman of pacmanList) {
+                let my_tile = this.map_graph_tiles.find(element => 
+                    element.position.x === pacman.x &&
+                    element.position.y === pacman.y);
+                for (let food of foodList) {
+                    let goal_tile = this.map_graph_tiles.find(element => 
+                        element.position.x === food.x &&
+                        element.position.y === food.y);
+                    let d = Game.Util.a_star(my_tile, goal_tile, this._ghosts).length - 1;
+                    if (d >= 0 && distance > d) distance = d;
+                }
+            }
+            return distance;
+        };
+        features["inverseOfDistanceToTheClosestFoodInEuclidian"] = (s, a) => {
+            let foodList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] >= 1) foodList.push({x: j, y: i});
+                }
+            }
+            let pacmanList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -2) pacmanList.push({x: j, y: i});
+                }
+            }
+            let distance = Number.POSITIVE_INFINITY;
+            for (let food of foodList) {
+                for (let pacman of pacmanList) {
+                    let d = Math.pow(food.x - pacman.x, 2) + Math.pow(food.y - pacman.y, 2);
+                    if (distance > d) distance = d;
+                }
+            }
+            let ret = Math.sqrt(distance);
+            if (ret === 0) return Number.POSITIVE_INFINITY;
+            else return 1 / ret;
+        };
+        features["inverseOfDistanceToTheClosestFoodInManhattan"] = (s, a) => {
+            let foodList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] >= 1) foodList.push({x: j, y: i});
+                }
+            }
+            let pacmanList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -2) pacmanList.push({x: j, y: i});
+                }
+            }
+            let distance = Number.POSITIVE_INFINITY;
+            for (let food of foodList) {
+                for (let pacman of pacmanList) {
+                    let d = Math.abs(food.x - pacman.x) + Math.abs(food.y - pacman.y);
+                    if (distance > d) distance = d;
+                }
+            }
+            let ret = distance;
+            if (ret === 0) return Number.POSITIVE_INFINITY;
+            else return 1 / ret;
+        };
+        features["inverseOfDistanceToTheClosestFoodInChebyshev"] = (s, a) => {
+            let foodList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] >= 1) foodList.push({x: j, y: i});
+                }
+            }
+            let pacmanList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -2) pacmanList.push({x: j, y: i});
+                }
+            }
+            let distance = Number.POSITIVE_INFINITY;
+            for (let food of foodList) {
+                for (let pacman of pacmanList) {
+                    let d = Math.max(Math.abs(food.x - pacman.x), Math.abs(food.y - pacman.y));
+                    if (distance > d) distance = d;
+                }
+            }
+            let ret = distance;
+            if (ret === 0) return Number.POSITIVE_INFINITY;
+            else return 1 / ret;
+        };
+        features["inverseOfDistanceToTheClosestFoodInReal"] = (s, a) => {
+            let foodList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] >= 1) foodList.push({x: j, y: i});
+                }
+            }
+            let pacmanList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -2) pacmanList.push({x: j, y: i});
+                }
+            }
+            let distance = Number.POSITIVE_INFINITY;
+            for (let pacman of pacmanList) {
+                let my_tile = this.map_graph_tiles.find(element => 
+                    element.position.x === pacman.x &&
+                    element.position.y === pacman.y);
+                for (let food of foodList) {
+                    let goal_tile = this.map_graph_tiles.find(element => 
+                        element.position.x === food.x &&
+                        element.position.y === food.y);
+                    let d = Game.Util.a_star(my_tile, goal_tile, this._ghosts).length - 1;
+                    if (d >= 0 && distance > d) distance = d;
+                }
+            }
+            let ret = distance;
+            if (ret === 0) return Number.POSITIVE_INFINITY;
+            else return 1 / ret;
+        };
+        features["distanceToTheClosestGhostInEuclidian"] = (s, a) => {
+            let ghostList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -3) ghostList.push({x: j, y: i});
+                }
+            }
+            let pacmanList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -2) pacmanList.push({x: j, y: i});
+                }
+            }
+            let distance = Number.POSITIVE_INFINITY;
+            for (let ghost of ghostList) {
+                for (let pacman of pacmanList) {
+                    let d = Math.pow(ghost.x - pacman.x, 2) + Math.pow(ghost.y - pacman.y, 2);
+                    if (distance > d) distance = d;
+                }
+            }
+            return Math.sqrt(distance);
+        };
+        features["distanceToTheClosestGhostInManhattan"] = (s, a) => {
+            let ghostList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -3) ghostList.push({x: j, y: i});
+                }
+            }
+            let pacmanList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -2) pacmanList.push({x: j, y: i});
+                }
+            }
+            let distance = Number.POSITIVE_INFINITY;
+            for (let ghost of ghostList) {
+                for (let pacman of pacmanList) {
+                    let d = Math.abs(ghost.x - pacman.x) + Math.abs(ghost.y - pacman.y);
+                    if (distance > d) distance = d;
+                }
+            }
+            return distance;
+        };
+        features["distanceToTheClosestGhostInChebyshev"] = (s, a) => {
+            let ghostList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -3) ghostList.push({x: j, y: i});
+                }
+            }
+            let pacmanList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -2) pacmanList.push({x: j, y: i});
+                }
+            }
+            let distance = Number.POSITIVE_INFINITY;
+            for (let ghost of ghostList) {
+                for (let pacman of pacmanList) {
+                    let d = Math.max(Math.abs(ghost.x - pacman.x), Math.abs(ghost.y - pacman.y));
+                    if (distance > d) distance = d;
+                }
+            }
+            return distance;
+        };
+        features["distanceToTheClosestGhostInReal"] = (s, a) => {
+            let ghostList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -3) ghostList.push({x: j, y: i});
+                }
+            }
+            let pacmanList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -2) pacmanList.push({x: j, y: i});
+                }
+            }
+            let distance = Number.POSITIVE_INFINITY;
+            for (let pacman of pacmanList) {
+                let my_tile = this.map_graph_tiles.find(element => 
+                    element.position.x === pacman.x &&
+                    element.position.y === pacman.y);
+                for (let ghost of ghostList) {
+                    let goal_tile = this.map_graph_tiles.find(element => 
+                        element.position.x === ghost.x &&
+                        element.position.y === ghost.y);
+                    let d = Game.Util.a_star(my_tile, goal_tile).length - 1;
+                    if (d >= 0 && distance > d) distance = d;
+                }
+            }
+            return distance;
+        };
+        features["inverseOfDistanceToTheClosestGhostInEuclidian"] = (s, a) => {
+            let ghostList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -3) ghostList.push({x: j, y: i});
+                }
+            }
+            let pacmanList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -2) pacmanList.push({x: j, y: i});
+                }
+            }
+            let distance = Number.POSITIVE_INFINITY;
+            for (let ghost of ghostList) {
+                for (let pacman of pacmanList) {
+                    let d = Math.pow(ghost.x - pacman.x, 2) + Math.pow(ghost.y - pacman.y, 2);
+                    if (distance > d) distance = d;
+                }
+            }
+            let ret = Math.sqrt(distance);
+            if (ret === 0) return Number.POSITIVE_INFINITY;
+            else return 1 / ret;
+        };
+        features["inverseOfDistanceToTheClosestGhostInManhattan"] = (s, a) => {
+            let ghostList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -3) ghostList.push({x: j, y: i});
+                }
+            }
+            let pacmanList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -2) pacmanList.push({x: j, y: i});
+                }
+            }
+            let distance = Number.POSITIVE_INFINITY;
+            for (let ghost of ghostList) {
+                for (let pacman of pacmanList) {
+                    let d = Math.abs(ghost.x - pacman.x) + Math.abs(ghost.y - pacman.y);
+                    if (distance > d) distance = d;
+                }
+            }
+            let ret = distance;
+            if (ret === 0) return Number.POSITIVE_INFINITY;
+            else return 1 / ret;
+        };
+        features["inverseOfDistanceToTheClosestGhostInChebyshev"] = (s, a) => {
+            let ghostList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -3) ghostList.push({x: j, y: i});
+                }
+            }
+            let pacmanList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -2) pacmanList.push({x: j, y: i});
+                }
+            }
+            let distance = Number.POSITIVE_INFINITY;
+            for (let ghost of ghostList) {
+                for (let pacman of pacmanList) {
+                    let d = Math.max(Math.abs(ghost.x - pacman.x), Math.abs(ghost.y - pacman.y));
+                    if (distance > d) distance = d;
+                }
+            }
+            let ret = distance;
+            if (ret === 0) return Number.POSITIVE_INFINITY;
+            else return 1 / ret;
+        };
+        features["inverseOfDistanceToTheClosestGhostInReal"] = (s, a) => {
+            let ghostList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -3) ghostList.push({x: j, y: i});
+                }
+            }
+            let pacmanList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -2) pacmanList.push({x: j, y: i});
+                }
+            }
+            let distance = Number.POSITIVE_INFINITY;
+            for (let pacman of pacmanList) {
+                let my_tile = this.map_graph_tiles.find(element => 
+                    element.position.x === pacman.x &&
+                    element.position.y === pacman.y);
+                for (let ghost of ghostList) {
+                    let goal_tile = this.map_graph_tiles.find(element => 
+                        element.position.x === ghost.x &&
+                        element.position.y === ghost.y);
+                    let d = Game.Util.a_star(my_tile, goal_tile).length - 1;
+                    if (d >= 0 && distance > d) distance = d;
+                }
+            }
+            let ret = distance;
+            if (ret === 0) return Number.POSITIVE_INFINITY;
+            else return 1 / ret;
+        };
+        features["whetherAFoodIsOnANeighboringSpace"] = (s, a) => {
+            let foodList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] >= 1) foodList.push({x: j, y: i});
+                }
+            }
+            let pacmanList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -2) pacmanList.push({x: j, y: i});
+                }
+            }
+            let distance = Number.POSITIVE_INFINITY;
+            for (let food of foodList) {
+                for (let pacman of pacmanList) {
+                    let d = Math.abs(food.x - pacman.x) + Math.abs(food.y - pacman.y);
+                    if (distance > d) distance = d;
+                }
+            }
+            return distance === 1;
+        };
+        features["whetherAGhostIsOnANeighboringSpace"] = (s, a) => {
+            let ghostList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -3) ghostList.push({x: j, y: i});
+                }
+            }
+            let pacmanList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -2) pacmanList.push({x: j, y: i});
+                }
+            }
+            let distance = Number.POSITIVE_INFINITY;
+            for (let ghost of ghostList) {
+                for (let pacman of pacmanList) {
+                    let d = Math.abs(ghost.x - pacman.x) + Math.abs(ghost.y - pacman.y);
+                    if (distance > d) distance = d;
+                }
+            }
+            return distance === 1;
+        };
+        features["canAPacmanDie"] = (s, a) => {
+            let ghostList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -3) ghostList.push({x: j, y: i});
+                }
+            }
+            let pacmanList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -2) pacmanList.push({x: j, y: i});
+                }
+            }
+            let distance = Number.POSITIVE_INFINITY;
+            for (let pacman of pacmanList) {
+                let my_tile = this.map_graph_tiles.find(element => 
+                    element.position.x === pacman.x &&
+                    element.position.y === pacman.y);
+                for (let ghost of ghostList) {
+                    let goal_tile = this.map_graph_tiles.find(element => 
+                        element.position.x === ghost.x &&
+                        element.position.y === ghost.y);
+                    let d = Game.Util.a_star(my_tile, goal_tile).length - 1;
+                    if (d >= 0 && distance > d) {
+                        distance = d;
+                    } 
+                }
+            }
+            if (distance <= 2) return true;
+            else return false;
+        }
+        features["isAPacmanDieWithAction"] = (s, a) => {
+            if (this.possible_actions.find(e => e === a) == undefined) return false;
+            let move_dir;
+            if (a === "left") move_dir = {x: -1, y: 0};
+            else if (a === "right") move_dir = {x: 1, y: 0};
+            else if (a === "up") move_dir = {x: 0, y: -1};
+            else if (a === "down") move_dir = {x: 0, y: 1};
+            let ghostList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -3) ghostList.push({x: j, y: i});
+                }
+            }
+            let pacmanList = [];
+            for (let i = 0; i < s.length; i++) {
+                for (let j = 0; j < s[i].length; j++) {
+                    if (s[i][j] === -2) pacmanList.push({x: j, y: i});
+                }
+            }
+            let distance = Number.POSITIVE_INFINITY;
+            for (let pacman of pacmanList) {
+                let my_tile = this.map_graph_tiles.find(element => 
+                    element.position.x === pacman.x + move_dir.x &&
+                    element.position.y === pacman.y + move_dir.y);
+                for (let ghost of ghostList) {
+                    let goal_tile = this.map_graph_tiles.find(element => 
+                        element.position.x === ghost.x &&
+                        element.position.y === ghost.y);
+                    let d = Game.Util.a_star(my_tile, goal_tile).length - 1;
+                    if (d >= 0 && distance > d) {
+                        distance = d;
+                    } 
+                }
+            }
+            if (distance <= 1) return true;
+            else return false;
+        }
+
+        if (feature_name === undefined)
+            return features;
+        else
+            return features[feature_name];
+    }
 
     get action_space() {
         return ["left", "right", "down", "up"];
+    }
+
+    get state() {
+        return this._state;
     }
 
     /**
@@ -353,11 +921,6 @@ class Game {
         });
         return actions;
     }
-    /*
-    get feature_function(state, action) {
-        // TODO
-    }
-    */
 
     get phase() {
         return this._phase;
@@ -499,7 +1062,7 @@ Game.Ghost = class {
             let goal_tile = this._game.map_graph_tiles.find(element => 
                 element.position.x === pacman.position.x &&
                 element.position.y === pacman.position.y);
-            let path = this.a_star(my_tile, goal_tile);
+            let path = Game.Util.a_star(my_tile, goal_tile, this._game._ghosts);
             if (path.length > 0 && min_path_length > 0 && path.length < min_path_length) {
                 min_path_length = path.length;
                 min_path = path;
@@ -510,87 +1073,6 @@ Game.Ghost = class {
         this._position_x = min_path[1].position.x;
         this._position_y = min_path[1].position.y;
         return true;
-    }
-
-    /**
-     * This method is used in a_star().
-     * @param {object} came_from 
-     * @param {Game.Tile} current 
-     * @returns {Game.Tile[]} total_path
-     */
-    reconstruct_path(came_from, current) {
-        let total_path = [current];
-        while (current.pos_id in came_from) {
-            current = came_from[current.pos_id];
-            total_path.unshift(current);
-        }
-        return total_path;
-    }
-
-    /**
-     * A* finds a path from start to goal. (https://en.wikipedia.org/wiki/A*_search_algorithm)
-     * @param {Game.Tile} start 
-     * @param {Game.Tile} goal 
-     */
-    a_star(start, goal) {
-        // Heuristic function 'h' will be the straight-line Manhattan distance to the goal
-        // (physically the smallest possible distance)
-        let h = tile => 
-            Math.abs(goal.position.x - tile.position.x) +
-            Math.abs(goal.position.y - tile.position.y);
-        let open_set = [start];
-        let closed_set = [];
-        let came_from = {};
-        let g_score = {};
-        g_score[start.pos_id] = 0;
-        let f_score = {};
-        f_score[start.pos_id] = h(start);
-
-        while (open_set.length > 0) {
-            let min_value = Number.POSITIVE_INFINITY;
-            let current = null;
-            for (let node of open_set) {
-                if (f_score[node.pos_id] < min_value) {
-                    min_value = f_score[node.pos_id];
-                    current = node;
-                }
-            }
-
-            if (current.pos_id === goal.pos_id) {
-                // Reached to goal!
-                return this.reconstruct_path(came_from, current)
-            }
-
-            open_set = open_set.filter(function(value, index, array) {
-                return value.pos_id !== current.pos_id;
-            });
-            closed_set.push(current);
-            for (let neighbor of current.adjacents) {
-                if (neighbor in closed_set || 
-                    this._game._ghosts.findIndex(ghost =>
-                        ghost.position.x === neighbor.position.x &&
-                        ghost.position.y === neighbor.position.y) !== -1) {
-                    // Other ghosts are also treated as obstacles
-                    continue;
-                }
-
-                // Adjacent tile distance is 1.
-                let tentative_g_score = g_score[current.pos_id] + 1;
-                if (!(neighbor.pos_id in g_score)) {
-                    g_score[neighbor.pos_id] = Number.POSITIVE_INFINITY;
-                }
-                if (tentative_g_score < g_score[neighbor.pos_id]) {
-                    came_from[neighbor.pos_id] = current;
-                    g_score[neighbor.pos_id] = tentative_g_score;
-                    f_score[neighbor.pos_id] = g_score[neighbor.pos_id] + h(neighbor);
-                    if (!(neighbor in open_set)) {
-                        open_set.push(neighbor);
-                    }
-                } 
-            }
-        }
-        // Goal was never reached.
-        return [];
     }
     
     get id() {
@@ -632,5 +1114,91 @@ Game.Food = class {
 
     get position() {
         return {x: this._position_x, y: this._position_y};
+    }
+}
+
+Game.Util = class {
+    /**
+     * This method is used in a_star().
+     * @param {Object} came_from 
+     * @param {Game.Tile} current 
+     * @returns {Game.Tile[]} total_path
+     */
+    static reconstruct_path(came_from, current) {
+        let total_path = [current];
+        while (current.pos_id in came_from) {
+            current = came_from[current.pos_id];
+            total_path.unshift(current);
+        }
+        return total_path;
+    }
+
+    /**
+     * A* finds a path from start to goal. (https://en.wikipedia.org/wiki/A*_search_algorithm)
+     * @param {Game.Tile} start 
+     * @param {Game.Tile} goal
+     * @param {Object[]} [obstacles]
+     * @param {number} obstacles[].position.x
+     * @param {number} obstacles[].position.y
+     */
+    static a_star(start, goal, obstacles) {
+        // Heuristic function 'h' will be the straight-line Manhattan distance to the goal
+        // (physically the smallest possible distance)
+        let h = tile => 
+            Math.abs(goal.position.x - tile.position.x) +
+            Math.abs(goal.position.y - tile.position.y);
+        let open_set = [start];
+        let closed_set = [];
+        let came_from = {};
+        let g_score = {};
+        g_score[start.pos_id] = 0;
+        let f_score = {};
+        f_score[start.pos_id] = h(start);
+
+        while (open_set.length > 0) {
+            let min_value = Number.POSITIVE_INFINITY;
+            let current = null;
+            for (let node of open_set) {
+                if (f_score[node.pos_id] < min_value) {
+                    min_value = f_score[node.pos_id];
+                    current = node;
+                }
+            }
+
+            if (current.pos_id === goal.pos_id) {
+                // Reached to goal!
+                return Game.Util.reconstruct_path(came_from, current)
+            }
+
+            open_set = open_set.filter(function(value, index, array) {
+                return value.pos_id !== current.pos_id;
+            });
+            closed_set.push(current);
+            for (let neighbor of current.adjacents) {
+                if (neighbor in closed_set || (
+                    obstacles != undefined &&
+                    obstacles.findIndex(obstacle =>
+                        obstacle.position.x === neighbor.position.x &&
+                        obstacle.position.y === neighbor.position.y) !== -1)) {
+                    continue;
+                }
+
+                // Adjacent tile distance is 1.
+                let tentative_g_score = g_score[current.pos_id] + 1;
+                if (!(neighbor.pos_id in g_score)) {
+                    g_score[neighbor.pos_id] = Number.POSITIVE_INFINITY;
+                }
+                if (tentative_g_score < g_score[neighbor.pos_id]) {
+                    came_from[neighbor.pos_id] = current;
+                    g_score[neighbor.pos_id] = tentative_g_score;
+                    f_score[neighbor.pos_id] = g_score[neighbor.pos_id] + h(neighbor);
+                    if (!(neighbor in open_set)) {
+                        open_set.push(neighbor);
+                    }
+                } 
+            }
+        }
+        // Goal was never reached.
+        return [];
     }
 }
