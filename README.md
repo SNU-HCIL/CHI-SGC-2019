@@ -1,4 +1,4 @@
-# ToDo:
+﻿# ToDo:
 
 Network, Learning Agent, Game은 모두 JS로 구현해야 함 (node.js 아님)
 
@@ -25,38 +25,54 @@ class LearningAgent
 
 ## Game
 
-- action_space()
+- action_space
+- possible_actions: current state에서 취할 수 있는 액션들을 리턴
 - ~~state_space()~~ 생각해 보니 state space 자체를 알아야 할 경우는 없을듯
-- possible_actions(state): 주어진 state에서 취할수 있는 액션들을 리턴
-- feature_function(state, action): list of features
-  - feature: (state, action) -> number
+- state: current state
+- feature_function(): all features (object type)
+- feature_function(feature_name): one of the features
+  - feature: (state, action) -> any
 - reset(): 새 게임 시작. Returns state
 - step(action): returns reward, done, new_state
 - render(): 게임 현재 화면을 `<canvas>`나 `<svg>`로 그려서 뱉는다
 
-- 팩맨으로하는게 좋을듯?
-  - 지금은 pacman, ghost, food만 맵에 있는걸로?
-  - ghost들은 지금은 멍청해도 괜찮 (랜덤으로 돌아다닌다거나 무조건 pacman만 잡을려 하거나)
-    - 2마리 정도?
+- 팩맨으로 하는게 좋을 듯?
+  - 지금은 Pacman, Ghost, Food만 맵에 있는걸로?
+  - Pacman들은 한 명이라도 특정 방향으로 움직일 수 있으면, 그 방향으로 다같이 움직임
+    - 원하는 수만큼 넣을 수 있음
+  - Ghost들은 A* 알고리즘으로 다른 Ghost를 피해서 가장 가까운 Pacman을 최적 경로로 쫓아감
+    - 원하는 수만큼 넣을 수 있음
   - rewards:
     - eat one food = 10
     - eat all the food = 100 (game done)
     - get killed by a ghost = -50 (game over)
     - ~~-1 for each turn~~
   - list of features:
-    - player position
-    - food positions
-    - number of foods
-    - ghost positions
-    - number of ghosts
-    - distance to the closest food (euclidian and maze distances)
-    - inverse of distance to closest food (1 if distance is 0)
-    - distance to the closest ghost (euclidian and maze distances)
-    - inverse of distance to closest ghost (1 if distance is 0)
-    - distance to the other ghost (euclidian and maze distances)
-    - inverse of distance to the other ghost
-    - whether a food is on a neighboring space
-    - whether a ghost is on a neightboring space
+    - `"pacmanPositions"`: (state) => list of `{x: ..., y: ...}`
+    - `"foodPositions"`: (state) => list of `{x: ..., y: ...}`
+    - `"numberOfFoods"`: (state) => number
+    - `"ghostPositions"`: (state) => list of `{x: ..., y: ...}`
+    - `"numberOfGhosts"`: (state) => number
+    - `"distanceToTheClosestFoodInEuclidian"`: (state) => number (장애물 고려 X, float)
+    - `"distanceToTheClosestFoodInManhattan"`: (state) => number (장애물 고려 X, int)
+    - `"distanceToTheClosestFoodInChebyshev"`: (state) => number (장애물 고려 X, int)
+    - `"distanceToTheClosestFoodInReal"`: (state) => number (장애물 고려 O, Ghost 고려 O, int)
+    - `"inverseOfDistanceToTheClosestFoodInEuclidian"`: (state) => number (장애물 고려 X, float, infinity if distance is 0)
+    - `"inverseOfDistanceToTheClosestFoodInManhattan"`: (state) => number (장애물 고려 X, int, infinity if distance is 0)
+    - `"inverseOfDistanceToTheClosestFoodInChebyshev"`: (state) => number (장애물 고려 X, int, infinity if distance is 0)
+    - `"inverseOfDistanceToTheClosestFoodInReal"`: (state) => number (장애물 고려 O, Ghost 고려 O, int, infinity if distance is 0)
+    - `"distanceToTheClosestGhostInEuclidian"`: (state) => number (장애물 고려 X, float)
+    - `"distanceToTheClosestGhostInManhattan"`: (state) => number (장애물 고려 X, int)
+    - `"distanceToTheClosestGhostInChebyshev"`: (state) => number (장애물 고려 X, int)
+    - `"distanceToTheClosestGhostInReal"`: (state) => number (장애물 고려 O, Ghost 고려 O, int)
+    - `"inverseOfDistanceToTheClosestGhostInEuclidian"`: (state) => number (장애물 고려 X, float, infinity if distance is 0)
+    - `"inverseOfDistanceToTheClosestGhostInManhattan"`: (state) => number (장애물 고려 X, int, infinity if distance is 0)
+    - `"inverseOfDistanceToTheClosestGhostInChebyshev"`: (state) => number (장애물 고려 X, int, infinity if distance is 0)
+    - `"inverseOfDistanceToTheClosestGhostInReal"`: (state) => number (장애물 고려 O, Ghost 고려 O, int, infinity if distance is 0)
+    - `"whetherAFoodIsOnANeighboringSpace"`: (state) => boolean (Manhattan distance === 1?)
+    - `"whetherAGhostIsOnANeighboringSpace"`: (state) => boolean (Manhattan distance === 1?)
+    - `"canAPacmanDie"`: (state) => boolean (바로 다음 턴에 죽을 가능성이 0%보다 큰가?)
+    - `"IsAPacmanDieWithAction"`: (state, action) => boolean (이렇게 행동하면 바로 다음 턴에 죽는가?)
     - 재량껏 추가해 주세요
   - 대략 이렇게 생긴 맵?:\
 ![alt text](https://github.com/SNU-HCIL/CHI-SGC-2019/blob/master/img/map.JPG)\
