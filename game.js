@@ -396,6 +396,7 @@ class Game {
      */
     feature_function(feature_name) {
         let features = {};
+        /*
         features["pacmanPositions"] = (s, a) => {
             let list = [];
             for (let i = 0; i < s.length; i++) {
@@ -414,6 +415,7 @@ class Game {
             }
             return list;
         };
+        */
         features["numberOfFoods"] = (s, a) => {
             let count = 0;
             for (let i = 0; i < s.length; i++) {
@@ -423,6 +425,7 @@ class Game {
             }
             return count;
         };
+        /*
         features["ghostPositions"] = (s, a) => {
             let list = [];
             for (let i = 0; i < s.length; i++) {
@@ -432,6 +435,7 @@ class Game {
             }
             return list;
         };
+        */
         features["numberOfGhosts"] = (s, a) => {
             let count = 0;
             for (let i = 0; i < s.length; i++) {
@@ -853,7 +857,9 @@ class Game {
                     if (distance > d) distance = d;
                 }
             }
-            return distance === 1;
+            if (distance === 1)
+                return 1;
+            else return 0;
         };
         features["whetherAGhostIsOnANeighboringSpace"] = (s, a) => {
             let ghostList = [];
@@ -875,7 +881,9 @@ class Game {
                     if (distance > d) distance = d;
                 }
             }
-            return distance === 1;
+            if (distance === 1)
+                return 1;
+            else return 0;
         };
         features["canAPacmanDie"] = (s, a) => {
             let ghostList = [];
@@ -905,11 +913,11 @@ class Game {
                     } 
                 }
             }
-            if (distance <= 2) return true;
-            else return false;
+            if (distance <= 2) return 1;
+            else return 0;
         }
         features["isAPacmanDieWithAction"] = (s, a) => {
-            if (this.possible_actions.find(e => e === a) == undefined) return false;
+            if (this.possible_actions.find(e => e === a) == undefined) return 0;
             let move_dir;
             if (a === "left") move_dir = {x: -1, y: 0};
             else if (a === "right") move_dir = {x: 1, y: 0};
@@ -942,8 +950,8 @@ class Game {
                     } 
                 }
             }
-            if (distance <= 1) return true;
-            else return false;
+            if (distance <= 1) return 1;
+            else return 0;
         }
 
         if (feature_name === undefined)
