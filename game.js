@@ -126,6 +126,82 @@ class Game {
         // It returns {reward: number, done: boolean, next_state: number[][]}
     }
 
+    // calculate next state when an action is performed
+    // without updating any real state and position of pacmans
+    virtualStep(action) {
+        if (this._phase !== 0) return null;
+
+        let virtual_action_performed = false;
+        let pacmans_new_position = [];
+        for (let pacman of this._pacmans) {
+            if (action === "left" &&
+                this.canPass(pacman.position.y, pacman.position.x - 1)) {
+                pacmans_new_position.push({x: pacman.position.x - 1, y: pacman.position.y});
+                virtual_action_performed = true;
+            }
+            else if (action === "right" &&
+                this.canPass(pacman.position.y, pacman.position.x + 1)) {
+                pacmans_new_position.push({x: pacman.position.x + 1, y: pacman.position.y});
+                virtual_action_performed = true;
+            }
+            else if (action === "down" &&
+                this.canPass(pacman.position.y + 1, pacman.position.x)) {
+                pacmans_new_position.push({x: pacman.position.x, y: pacman.position.y + 1});
+                virtual_action_performed = true;
+            }
+            else if (action === "up" &&
+                this.canPass(pacman.position.y - 1, pacman.position.x)) {
+                pacmans_new_position.push({x: pacman.position.x, y: pacman.position.y - 1});
+                virtual_action_performed = true;
+            }
+            else {
+                pacmans_new_position.push({x: pacman.position.x, y: pacman.position.y});
+            }
+        }
+        if (!virtual_action_performed) {
+            return this._state;
+        }
+        let virtual_state = [];
+        for (let i = 0; i < this._state.length; i++) {
+            virtual_state.push([]);
+            for (let j = 0; j < this._state[i].length; j++) {
+                let id = this._state[i][j];
+                if (id === -2) {
+                    virtual_state[i].push(0);
+                }
+                else {
+                    virtual_state[i].push(id);
+                }
+            }
+        }
+        for (let element of pacmans_new_position) {
+            virtual_state[element.y][element.x] = -2;
+        }
+        for (let element of this._ghosts) {
+            virtual_state[element.position.y][element.position.x] = -3;
+        }
+
+        /* Find objects that should be updated */
+        let virtual_eatenFoods = [];
+        let virtual_deadPacmans = [];
+        for (let element of pacmans_new_position) {
+            if (this._foods.findIndex((food) => {
+                    return element.x == food.position.x && element.y == food.position.y
+                }) !== -1) {
+                virtual_eatenFoods.push(this._foods.find((food) => {
+                        return element.x === food.position.x && element.y === food.position.y
+                    }));
+            }
+            if (this._ghosts.findIndex((ghost) => {
+                    return element.x === ghost.position.x && element.y === ghost.position.y
+                }) !== -1) {
+                virtual_deadPacmans.push(element);
+            }
+        }
+        return {eaten: virtual_eatenFoods, dead: virtual_deadPacmans, next_state: virtual_state};
+        // it returns {eaten: list of Food, dead: list of {x: number, y: number}, next_state: number[][]}
+    }
+
     render() {
         let cellSize = 40;
         let margin = {top: 30, bottom: 30, left: 30, right: 30};
