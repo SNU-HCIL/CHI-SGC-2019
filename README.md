@@ -33,7 +33,8 @@ class LearningAgent
 - feature_function(feature_name): one of the features
   - feature: (state, action) -> any
 - reset(): 새 게임 시작. Returns state
-- step(action): returns reward, done, new_state
+- step(action): returns reward, done, next_state
+- virtualStep(action): returns eaten, dead, next_state (실제 상태에는 영향을 주지 않고 행동 후의 상태를 계산)
 - render(): 게임 현재 화면을 `<canvas>`나 `<svg>`로 그려서 뱉는다
 
 - 팩맨으로 하는게 좋을 듯?
@@ -48,10 +49,10 @@ class LearningAgent
     - get killed by a ghost = -50 (game over)
     - ~~-1 for each turn~~
   - list of features:
-    - `"pacmanPositions"`: (state) => list of `{x: ..., y: ...}`
-    - `"foodPositions"`: (state) => list of `{x: ..., y: ...}`
+    - ~~`"pacmanPositions"`: (state) => list of `{x: ..., y: ...}`~~
+    - ~~`"foodPositions"`: (state) => list of `{x: ..., y: ...}`~~
     - `"numberOfFoods"`: (state) => number
-    - `"ghostPositions"`: (state) => list of `{x: ..., y: ...}`
+    - ~~`"ghostPositions"`: (state) => list of `{x: ..., y: ...}`~~
     - `"numberOfGhosts"`: (state) => number
     - `"distanceToTheClosestFoodInEuclidian"`: (state) => number (장애물 고려 X, float)
     - `"distanceToTheClosestFoodInManhattan"`: (state) => number (장애물 고려 X, int)
@@ -69,10 +70,10 @@ class LearningAgent
     - `"inverseOfDistanceToTheClosestGhostInManhattan"`: (state) => number (장애물 고려 X, int, infinity if distance is 0)
     - `"inverseOfDistanceToTheClosestGhostInChebyshev"`: (state) => number (장애물 고려 X, int, infinity if distance is 0)
     - `"inverseOfDistanceToTheClosestGhostInReal"`: (state) => number (장애물 고려 O, Ghost 고려 O, int, infinity if distance is 0)
-    - `"whetherAFoodIsOnANeighboringSpace"`: (state) => boolean (Manhattan distance === 1?)
-    - `"whetherAGhostIsOnANeighboringSpace"`: (state) => boolean (Manhattan distance === 1?)
-    - `"canAPacmanDie"`: (state) => boolean (바로 다음 턴에 죽을 가능성이 0%보다 큰가?)
-    - `"IsAPacmanDieWithAction"`: (state, action) => boolean (이렇게 행동하면 바로 다음 턴에 죽는가?)
+    - `"whetherAFoodIsOnANeighboringSpace"`: (state) => number (Manhattan distance === 1? 0 or 1)
+    - `"whetherAGhostIsOnANeighboringSpace"`: (state) => number (Manhattan distance === 1? 0 or 1)
+    - `"canAPacmanDie"`: (state) => number (바로 다음 턴에 죽을 가능성이 0%보다 큰가? 0 or 1)
+    - `"IsAPacmanDieWithAction"`: (state, action) => number (이렇게 행동하면 바로 다음 턴에 죽는가? 0 or 1)
     - 재량껏 추가해 주세요
   - 대략 이렇게 생긴 맵?:\
 ![alt text](https://github.com/SNU-HCIL/CHI-SGC-2019/blob/master/img/map.JPG)\
