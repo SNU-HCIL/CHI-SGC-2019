@@ -33,7 +33,8 @@ class LearningAgent
 - feature_function(feature_name): one of the features
   - feature: (state, action) -> any
 - reset(): 새 게임 시작. Returns state
-- step(action): returns reward, done, new_state
+- step(action): returns reward, done, next_state
+- virtualStep(action): returns eaten, dead, next_state (실제 상태에는 영향을 주지 않고 행동 후의 상태를 계산)
 - render(): 게임 현재 화면을 `<canvas>`나 `<svg>`로 그려서 뱉는다
 
 - 팩맨으로 하는게 좋을 듯?
